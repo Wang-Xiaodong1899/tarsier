@@ -21,7 +21,15 @@ from pathos.multiprocessing import ProcessingPool as Pool
 import func_timeout
 from func_timeout import func_set_timeout
 
-from tools.gpt_api import azure_gpt4_client
+# from tools.gpt_api import azure_gpt4_client
+import os
+from openai import OpenAI
+client = OpenAI(
+    base_url="https://api.ai-gaochao.cn/v1/",
+    api_key=os.getenv("OPENAI_API_KEY"),
+)
+
+
 import re
 import os
 from copy import deepcopy
@@ -34,7 +42,7 @@ def count_f1(r, p):
 def call_azure_gpt_api(events, reference, prediction, model):
     if len(events) == 0:
         events = [reference.replace('\n', ' ')]  
-    completion = azure_gpt4_client.chat.completions.create(
+    completion = client.chat.completions.create(
         model=model,
         messages=[
             {
@@ -58,11 +66,12 @@ def call_azure_gpt_api(events, reference, prediction, model):
             }
         ]
     )
-    return json.loads(completion.model_dump_json())['choices'][0]['message']['content']
+    # print(completion.choices[0].message.content)
+    return completion.choices[0].message.content
 
 @func_set_timeout(60)
 def call_azure_gpt_api_for_events(caption, model):
-    completion = azure_gpt4_client.chat.completions.create(
+    completion = client.chat.completions.create(
         model=model,
         messages=[
             {
@@ -83,7 +92,8 @@ def call_azure_gpt_api_for_events(caption, model):
             }
         ]
     )
-    return json.loads(completion.model_dump_json())['choices'][0]['message']['content']
+    # print(completion.choices[0].message.content)
+    return completion.choices[0].message.content
 
 def try_call_api_for_eval(events, answer, prediction, model, verbose=False, max_retry=-1):
     retry_exceptions = [
@@ -278,7 +288,7 @@ class DREAMGPTMetric:
         self.dataset_name = dataset_name
         self.num_worker = 64
         # self.model = 'gpt-35-turbo'
-        self.model = 'gpt-35-turbo-0125'
+        self.model = 'gpt-3.5-turbo-0125'
         # self.model='gpt-4-1106-preview'
         self.results = []
         self.invalid_results = []
